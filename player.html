@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Now Playing - BIGMANJ</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Inter,system-ui}
+body{background:#0A0A0F;color:#fff;min-height:100vh;padding-bottom:90px}
+.top{padding:16px 20px;display:flex;justify-content:space-between;align-items:center;background:#11111A}
+.top a{color:#fff;text-decoration:none}
+.card-wrap{padding:20px}
+#playerCard{background:#15151F;border:2px solid #7C5CFF;border-radius:24px;padding:18px;transition:all.6s ease;box-shadow:0 0 30px rgba(124,92,255,.3)}
+.card-top{display:flex;gap:16px}
+#art{width:120px;height:120px;border-radius:16px;object-fit:cover;background:#222}
+.meta{flex:1;min-width:0}
+.meta span{font-size:12px;color:#A88BFF;letter-spacing:1px}
+.meta b{font-size:20px;display:block;margin:4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta small{color:#8A8A9E;font-size:13px}
+.time-row{display:flex;justify-content:space-between;font-size:12px;color:#8A8A9E;margin:16px 0 6px}
+.progress{width:100%;height:6px;background:#2A2A3D;border-radius:10px;overflow:hidden;cursor:pointer}
+#progressBar{height:100%;width:0%;background:#7C5CFF;border-radius:10px;transition:width.2s}
+.controls{display:flex;justify-content:space-around;align-items:center;margin-top:20px}
+.ctrl{font-size:22px;color:#8A8A9E;cursor:pointer}
+.ctrl.play{width:62px;height:62px;background:#fff;color:#111;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 8px 20px rgba(0,0,0,.4)}
+.actions{display:flex;gap:10px;margin-top:18px}
+.actions button{flex:1;padding:12px;border-radius:12px;border:1px solid #2A2A3D;background:#1E1E2E;color:#fff;font-weight:700;cursor:pointer}
+.actions button.primary{background:#7C5CFF;border-color:#7C5CFF}
+.lyrics{margin:20px;padding:18px;background:#15151F;border-radius:18px;border:1px solid #2A2A3D}
+.lyrics h3{color:#A88BFF;margin-bottom:10px;font-size:14px;letter-spacing:1px}
+.lyrics p{line-height:1.7;color:#CFCFE8;font-size:14px;white-space:pre-wrap}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#11111A;border-top:1px solid #2A2A3D;display:flex;justify-content:space-around;padding:12px 0}
+.nav-item{color:#6B6B7E;font-size:12px;text-align:center;text-decoration:none}
+.nav-item.active{color:#7C5CFF}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a href="search.html">‹ Back</a><span style="color:#A88BFF">Now Playing</span><span>•••</span>
+</div>
+
+<div class="card-wrap">
+  <div id="playerCard">
+    <div class="card-top">
+      <img id="art" src="">
+      <div class="meta">
+        <span id="live">LIVE • 0:00</span>
+        <b id="title">Montagem Rabeta</b>
+        <small id="artist">BIGMANJ • PLAYET</small>
+      </div>
+    </div>
+    <div class="time-row"><span id="cur">0:00</span><span id="dur">3:24</span></div>
+    <div class="progress" onclick="seek(event)"><div id="progressBar"></div></div>
+    <div class="controls">
+      <div class="ctrl">🔀</div>
+      <div class="ctrl" onclick="audio.currentTime-=10">⏮</div>
+      <div class="ctrl play" id="playBtn" onclick="togglePlay()">▶</div>
+      <div class="ctrl" onclick="audio.currentTime+=10">⏭</div>
+      <div class="ctrl">🔁</div>
+    </div>
+    <div class="actions">
+      <button onclick="like()">♡ Like</button>
+      <button class="primary" onclick="downloadSong()">⬇ Download</button>
+    </div>
+  </div>
+
+  <div class="lyrics">
+    <h3>LETRA</h3>
+    <p id="lyricsTxt">Loading lyrics...</p>
+  </div>
+</div>
+
+<audio id="audio" style="display:none"></audio>
+
+<div class="bottom-nav">
+  <a class="nav-item" href="index.html">🏠<br>Home</a>
+  <a class="nav-item active" href="player.html">▶<br>Now</a>
+  <a class="nav-item" href="library.html">📚<br>Library</a>
+  <a class="nav-item" href="profile.html">👤<br>Profile</a>
+</div>
+
+<script>
+const audio = document.getElementById('audio');
+const thumb = localStorage.getItem('current_thumb') || "https://i.ytimg.com/vi/S61N6AtCapI/hq720.jpg";
+const title = localStorage.getItem('current_title') || "Montagem Rabeta";
+const videoId = localStorage.getItem('current_id') || "S61N6AtCapI";
+document.getElementById('art').src = thumb;
+document.getElementById('title').innerText = title;
+
+// 1. COLOR MATCH LOGIC - player card match thumbnail
+function matchCardColor(imgUrl){
+ const img = new Image();
+ img.crossOrigin = "anonymous";
+ img.src = imgUrl;
+ img.onload = ()=>{
+  const c = document.createElement('canvas');
+  c.width = 20; c.height = 20;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(img,0,0,20,20);
+  let r=0,g=0,b=0;
+  const data = ctx.getImageData(0,0,20,20).data;
+  for(let i=0;i<data.length;i+=4){ r+=data[i]; g+=data[i+1]; b+=data[i+2]; }
+  const count = data.length/4;
+  r=Math.round(r/count); g=Math.round(g/count); b=Math.round(b/count);
+  const solid = `rgb(${r},${g},${b})`;
+  const soft = `rgba(${r},${g},${b},0.35)`;
+  const card = document.getElementById('playerCard');
+  card.style.background = `linear-gradient(135deg, ${soft} 0%, #15151F 70%)`;
+  card.style.borderColor = solid;
+  card.style.boxShadow = `0 0 50px ${soft}, inset 0 0 20px ${soft}`;
+  document.getElementById('progressBar').style.background = solid;
+  document.getElementById('live').style.color = solid;
+ }
+}
+matchCardColor(thumb);
+
+// 2. Load mp3 from ytmp3 API
+async function loadAudio(){
+ try{
+  const res = await fetch(`https://api.nexray.eu.cc/api/downloader/ytmp3?url=https://youtube.com/watch?v=${videoId}`);
+  const data = await res.json();
+  const url = data.result || data.download || data.url;
+  audio.src = url;
+  audio.play();
+  document.getElementById('playBtn').innerText = "⏸";
+ }catch{
+  audio.src = ""; // fallback
+ }
+}
+loadAudio();
+
+// 3. Lyrics
+async function loadLyrics(){
+ try{
+  const res = await fetch(`https://api.nexray.eu.cc/api/search/lirik?query=${encodeURIComponent(title)}`);
+  const data = await res.json();
+  document.getElementById('lyricsTxt').innerText = data.lirik || data.lyrics || "Letra não encontrada - mas o som tá pesado!";
+ }catch{ document.getElementById('lyricsTxt').innerText = "Ela chegou no paredão, treme o chão..."; }
+}
+loadLyrics();
+
+// 4. Player controls
+function togglePlay(){
+ if(audio.paused){ audio.play(); document.getElementById('playBtn').innerText="⏸"; }
+ else{ audio.pause(); document.getElementById('playBtn').innerText="▶"; }
+}
+audio.ontimeupdate = ()=>{
+ const p = (audio.currentTime/audio.duration)*100;
+ document.getElementById('progressBar').style.width = p+"%";
+ document.getElementById('cur').innerText = fmt(audio.currentTime);
+ document.getElementById('dur').innerText = fmt(audio.duration);
+ document.getElementById('live').innerText = `LIVE • ${fmt(audio.currentTime)} / ${fmt(audio.duration)}`;
+}
+function fmt(s){ if(isNaN(s)) return "0:00"; const m=Math.floor(s/60); const sec=Math.floor(s%60).toString().padStart(2,'0'); return `${m}:${sec}`; }
+function seek(e){
+ const rect = e.currentTarget.getBoundingClientRect();
+ const x = e.clientX - rect.left;
+ audio.currentTime = (x/rect.width)*audio.duration;
+}
+function like(){ alert("Added to Liked ❤️"); }
+function downloadSong(){
+ // save to IndexedDB for offline (library.js will handle)
+ alert("Downloading for offline...");
+}
+</script>
+</body>
+</html>
