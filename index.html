@@ -2,62 +2,91 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<meta name="theme-color" content="#080A0F">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BIGMANJ PLAYER - MUSIC HUB</title>
 <link rel="manifest" href="manifest.json">
-<title>BIGMANJ HTML EDITOR</title>
+<meta name="theme-color" content="#7C5CFF">
 <style>
-*{box-sizing:border-box;margin:0}
-body{background:#080A0F;color:#CFCFCF;font-family:monospace;height:100vh;display:flex;flex-direction:column}
-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#0D0F17;border-bottom:1px solid #1F2228;font-family:Inter,sans-serif}
-header b{color:#FFD700;letter-spacing:2px;font-size:16px}
-.actions{display:flex;gap:6px;margin:10px 12px;flex-wrap:wrap}
-.actions button{flex:1;min-width:58px;background:#1E2128;border:1px solid #252B3B;color:#8B96AC;padding:10px 5px;border-radius:10px;font-size:11px;font-weight:800}
-.actions button.run{background:#FFD700;color:#000}.actions button.fix{background:#6A7BFF;color:#fff}.actions button.fmt{background:#2A2D33;color:#fff}
-.filebar{margin:0 12px;background:#1E2128;border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;font-size:12px;color:#8B96AC;font-family:Inter,sans-serif}
-.wrap{flex:1;display:flex;margin:10px 12px;min-height:0;border:1px solid #1F2228;border-radius:12px;overflow:hidden;background:#121212}
-.nums{background:#0F1117;color:#5A5E6A;padding:10px 6px;text-align:right;font-size:12px;line-height:20px;min-width:36px}
-#code{flex:1;background:transparent;border:none;color:#E6E6E6;padding:10px 8px;font-size:13px;line-height:20px;outline:none;resize:none;white-space:pre}
-#preview{flex:1;margin:10px 12px;background:white;border-radius:12px;border:none;display:none}
-.errors{margin:0 12px 8px;background:#1A1214;border:1px solid #3A2028;border-radius:10px;max-height:130px;overflow:auto;display:none}
-.errors h4{padding:8px 12px;font-size:11px;color:#FF5A6A;background:#25151A;display:flex;justify-content:space-between;font-family:Inter,sans-serif}
-.err{padding:6px 12px;font-size:11px;color:#FF9AA3;border-bottom:1px solid #22181B}
-.footer{display:flex;justify-content:space-between;padding:10px 12px;margin:0 12px 12px;background:#1E2128;border-radius:10px;font-size:10px;color:#8B96AC;font-family:Inter,sans-serif}
-.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#FFD700;color:#000;padding:9px 18px;border-radius:24px;font-size:12px;font-weight:800;display:none;z-index:99}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Inter,system-ui}
+body{background:#0A0A0F;color:#fff;min-height:100vh;padding-bottom:90px}
+.header{display:flex;justify-content:space-between;align-items:center;padding:18px 20px}
+.logo{font-weight:900;font-size:22px;letter-spacing:1px;background:linear-gradient(90deg,#A88BFF,#7C5CFF);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hdr-icons{display:flex;gap:14px}
+.hdr-icons div{width:38px;height:38px;background:#1E1E2A;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.search-wrap{padding:0 20px;margin:10px 0}
+.search-bar{width:100%;background:#1A1A27;border:1px solid #2E2E4A;border-radius:16px;padding:14px 18px;display:flex;align-items:center;gap:12px;color:#888}
+.search-bar input{flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:16px}
+.card{margin:18px 20px;background:#15151F;border-radius:20px;padding:16px;border:1px solid #2A2A3D}
+.card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.card-head h3{font-size:16px;color:#C9B6FF}
+.song-row{display:flex;align-items:center;gap:12px;padding:12px;background:#1E1E2E;border-radius:14px;margin-bottom:10px}
+.song-row img{width:52px;height:52px;border-radius:10px;object-fit:cover}
+.song-info{flex:1}
+.song-info b{display:block;font-size:14px}
+.song-info span{font-size:12px;color:#8A8A9E}
+.play-btn{width:36px;height:36px;background:#7C5CFF;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.whatmusic{background:linear-gradient(135deg,#2A1A5A,#7C5CFF);border:none}
+.whatmusic button{margin-top:12px;width:100%;background:#fff;color:#6A3FFF;font-weight:800;border:none;padding:12px;border-radius:12px}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#11111A;border-top:1px solid #2A2A3D;display:flex;justify-content:space-around;padding:12px 0}
+.nav-item{color:#6B6B7E;font-size:12px;text-align:center;cursor:pointer;text-decoration:none}
+.nav-item.active{color:#7C5CFF}
+.nav-item i{font-size:22px;display:block;margin-bottom:2px}
 </style>
 </head>
 <body>
-<header><span>☰</span><b>BIGMANJ</b><span id="installBtn" style="display:none;color:#FFD700;cursor:pointer">⬇ Install</span></header>
-<div class="actions">
-  <button onclick="clearCode()">🗑 Clear</button>
-  <button onclick="pasteCode()">📋 Paste</button>
-  <button onclick="copyCode()">📄 Copy</button>
-  <button class="fix" onclick="autoFix()">✨ Fix</button>
-  <button class="fmt" onclick="beautify()">{} Format</button>
-  <button class="run" onclick="runCode()">▶ Run</button>
+
+<div class="header">
+  <div class="logo">▶ BIGMANJ PLAYET</div>
+  <div class="hdr-icons"><div>🔔</div><div>👤</div></div>
 </div>
-<div class="filebar"><span>📄 index.html • BIGMANJ EDITOR</span><span id="lineCount">0 lines</span></div>
-<div class="wrap" id="editorWrap"><div class="nums" id="nums">1</div><textarea id="code" oninput="onEdit()"></textarea></div>
-<iframe id="preview" sandbox="allow-scripts allow-same-origin"></iframe>
-<div class="errors" id="errBox"><h4><span>⚠️ PROBLEMS (<span id="errCount">0</span>)</span><span style="color:#6A7BFF" onclick="autoFix()">AUTO FIX →</span></h4><div id="errList"></div></div>
-<div class="footer"><span id="info">Ln 1 • BIGMANK</span><span id="status">Ready • Tap Run</span></div>
-<div class="toast" id="toast"></div>
+
+<div class="search-wrap" onclick="location.href='search.html'">
+  <div class="search-bar">🔍 <input placeholder="Search montagem rabeta..." readonly> 🎤</div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>🔥 Trending Now</h3><span style="color:#7C5CFF;font-size:13px">See all</span></div>
+  <div id="trending"></div>
+</div>
+
+<div class="card whatmusic">
+  <div class="card-head"><h3 style="color:#fff">🎧 WhatMusic - Ask Music</h3></div>
+  <p style="font-size:13px;opacity:.8">Upload any song to identify title, artist & lyrics</p>
+  <button onclick="location.href='whatmusic.html'">+ Upload & Ask Music</button>
+</div>
+
+<div class="card">
+  <div class="card-head"><h3>🕓 Recently Played</h3></div>
+  <div id="recent"></div>
+</div>
+
+<div class="bottom-nav">
+  <a class="nav-item active" href="index.html"><i>🏠</i>Home</a>
+  <a class="nav-item" href="search.html"><i>🔍</i>Search</a>
+  <a class="nav-item" href="library.html"><i>📚</i>Library</a>
+  <a class="nav-item" href="profile.html"><i>👤</i>Profile</a>
+</div>
+
 <script>
-const code=document.getElementById('code'),nums=document.getElementById('nums'),preview=document.getElementById('preview'),errBox=document.getElementById('errBox'),errList=document.getElementById('errList'),editorWrap=document.getElementById('editorWrap');
-code.value=`<!DOCTYPE html>\n<html>\n<head>\n<style>\n  body{font-family:Inter;text-align:center;padding:30px}\n  h1{color:#FFD700;text-shadow:0 2px 10px #000}\n  button{background:#FFD700;color:#000;padding:12px 28px;border:none;border-radius:12px;font-weight:800}\n</style>\n</head>\n<body>\n  <h1>BIGMANJ EDITOR 🔥</h1>\n  <p>Powered by BIGMANK - Real HTML Live</p>\n  <button>BIGMANJ!</button>\n</body>\n</html>`;
-function onEdit(){let l=code.value.split('\n');document.getElementById('lineCount').innerText=l.length+' lines';nums.innerHTML=l.map((_,i)=>i+1).join('<br>');let p=code.selectionStart;let b=code.value.substring(0,p);document.getElementById('info').innerText=`Ln ${b.split('\n').length} • BIGMANK`;checkErrors()}
-function checkErrors(){let html=code.value,errs=[],stack=[],voids=['br','hr','img','input','meta','link'];let re=/<\/?([a-z0-9]+)[^>]*>/gi,m;while(m=re.exec(html)){let full=m[0],name=m[1].toLowerCase();if(voids.includes(name)||full.endsWith('/>')||full.startsWith('<!'))continue;if(full[1]==='/'){if(!stack.length)errs.push({msg:`Extra </${name}>`});else if(stack[stack.length-1]!==name)errs.push({msg:`Expected </${stack[stack.length-1]}> got </${name}>`});else stack.pop()}else stack.push(name)}stack.reverse().forEach(t=>errs.push({msg:`Unclosed <${t}>`}));if(errs.length){errBox.style.display='block';document.getElementById('errCount').innerText=errs.length;errList.innerHTML=errs.map(e=>`<div class="err">• ${e.msg}</div>`).join('');document.getElementById('status').innerText=`⚠️ ${errs.length} errors`;document.getElementById('status').style.color='#FF5A6A'}else{errBox.style.display='none';document.getElementById('status').innerText='✓ BIGMANJ Ready';document.getElementById('status').style.color='#FFD700'}return errs}
-function autoFix(){let html=code.value.replace(/viewpont/g,'viewport').replace(/backgroud/g,'background');let stack=[],voids=['br','hr','img','input','meta','link','!doctype'],re=/<\/?([a-z0-9]+)[^>]*>/gi,tokens=[],m;while(m=re.exec(html))tokens.push({full:m[0],name:m[1].toLowerCase(),index:m.index});let res='',last=0;tokens.forEach(t=>{res+=html.slice(last,t.index)+t.full;last=t.index+t.full.length;if(voids.includes(t.name)||t.full.endsWith('/>')||t.full.startsWith('<!'))return;if(t.full[1]!=='/')stack.push(t.name);else if(stack.includes(t.name))while(stack.length){if(stack.pop()===t.name)break}});res+=html.slice(last);while(stack.length)res+=`</${stack.pop()}>`;code.value=res;onEdit();showToast('✨ BIGMANJ Fixed!')}
-function beautify(){let h=code.value.replace(/></g,'>\n<');let ind=0;code.value=h.split('\n').map(l=>{l=l.trim();if(l.startsWith('</'))ind=Math.max(0,ind-1);let o='  '.repeat(ind)+l;if(l.startsWith('<')&&!l.startsWith('</')&&!l.startsWith('<!')&&!l.endsWith('/>')&&!l.includes('</')&&!['<br','<hr','<img','<input','<meta','<link'].some(v=>l.toLowerCase().startsWith(v)))ind++;return o}).join('\n');onEdit();showToast('Formatted')}
-function showToast(t){let e=document.getElementById('toast');e.innerText=t;e.style.display='block';setTimeout(()=>e.style.display='none',1500)}
-function clearCode(){code.value='';onEdit();preview.style.display='none';editorWrap.style.display='flex'}
-async function pasteCode(){try{code.value=await navigator.clipboard.readText();onEdit();showToast('Pasted')}catch{showToast('Long-press Paste')}}
-function copyCode(){navigator.clipboard.writeText(code.value);showToast('Copied')}
-function runCode(){if(checkErrors().length){showToast('Tap ✨ Fix first');return}preview.srcdoc=code.value;preview.style.display='block';editorWrap.style.display='none';showToast('BIGMANJ Running...')}
-document.getElementById('info').onclick=()=>{preview.style.display='none';editorWrap.style.display='flex'}
-onEdit();
-let deferredPrompt;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;document.getElementById('installBtn').style.display='block'});document.getElementById('installBtn').onclick=async()=>{if(deferredPrompt){deferredPrompt.prompt();deferredPrompt=null;document.getElementById('installBtn').style.display='none'}};
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js')}
+// Mock trending - will be replaced by API later
+const trends=[
+ {title:"Montagem Rabeta",artist:"VXCA • Funk",plays:"4.4M",img:"https://i.ytimg.com/vi/S61N6AtCapI/hq720.jpg"},
+ {title:"Montagem Rabeta (Ultra Slowed)",artist:"MC RBL • Phonk",plays:"8.4M",img:"https://i.ytimg.com/vi/XotHVZtVa_0/hq720.jpg"},
+ {title:"Night Pulse",artist:"KAI • 2:45",plays:"3.2M",img:"https://picsum.photos/200?1"}
+];
+function render(id,list){
+ document.getElementById(id).innerHTML=list.map(s=>`
+  <div class="song-row" onclick="playSong('${s.title}','${s.img}')">
+    <img src="${s.img}"><div class="song-info"><b>${s.title}</b><span>${s.artist} • ${s.plays} plays</span></div><div class="play-btn">▶</div>
+  </div>`).join('');
+}
+function playSong(title,thumb){
+ localStorage.setItem('current_title',title);
+ localStorage.setItem('current_thumb',thumb);
+ location.href='player.html';
+}
+render('trending',trends);
+render('recent',trends.slice(0,2));
 </script>
 </body>
-</html>  
+</html>
