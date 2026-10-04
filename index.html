@@ -1,1 +1,63 @@
-  
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#080A0F">
+<link rel="manifest" href="manifest.json">
+<title>BIGMANJ HTML EDITOR</title>
+<style>
+*{box-sizing:border-box;margin:0}
+body{background:#080A0F;color:#CFCFCF;font-family:monospace;height:100vh;display:flex;flex-direction:column}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#0D0F17;border-bottom:1px solid #1F2228;font-family:Inter,sans-serif}
+header b{color:#FFD700;letter-spacing:2px;font-size:16px}
+.actions{display:flex;gap:6px;margin:10px 12px;flex-wrap:wrap}
+.actions button{flex:1;min-width:58px;background:#1E2128;border:1px solid #252B3B;color:#8B96AC;padding:10px 5px;border-radius:10px;font-size:11px;font-weight:800}
+.actions button.run{background:#FFD700;color:#000}.actions button.fix{background:#6A7BFF;color:#fff}.actions button.fmt{background:#2A2D33;color:#fff}
+.filebar{margin:0 12px;background:#1E2128;border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;font-size:12px;color:#8B96AC;font-family:Inter,sans-serif}
+.wrap{flex:1;display:flex;margin:10px 12px;min-height:0;border:1px solid #1F2228;border-radius:12px;overflow:hidden;background:#121212}
+.nums{background:#0F1117;color:#5A5E6A;padding:10px 6px;text-align:right;font-size:12px;line-height:20px;min-width:36px}
+#code{flex:1;background:transparent;border:none;color:#E6E6E6;padding:10px 8px;font-size:13px;line-height:20px;outline:none;resize:none;white-space:pre}
+#preview{flex:1;margin:10px 12px;background:white;border-radius:12px;border:none;display:none}
+.errors{margin:0 12px 8px;background:#1A1214;border:1px solid #3A2028;border-radius:10px;max-height:130px;overflow:auto;display:none}
+.errors h4{padding:8px 12px;font-size:11px;color:#FF5A6A;background:#25151A;display:flex;justify-content:space-between;font-family:Inter,sans-serif}
+.err{padding:6px 12px;font-size:11px;color:#FF9AA3;border-bottom:1px solid #22181B}
+.footer{display:flex;justify-content:space-between;padding:10px 12px;margin:0 12px 12px;background:#1E2128;border-radius:10px;font-size:10px;color:#8B96AC;font-family:Inter,sans-serif}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#FFD700;color:#000;padding:9px 18px;border-radius:24px;font-size:12px;font-weight:800;display:none;z-index:99}
+</style>
+</head>
+<body>
+<header><span>☰</span><b>BIGMANJ</b><span id="installBtn" style="display:none;color:#FFD700;cursor:pointer">⬇ Install</span></header>
+<div class="actions">
+  <button onclick="clearCode()">🗑 Clear</button>
+  <button onclick="pasteCode()">📋 Paste</button>
+  <button onclick="copyCode()">📄 Copy</button>
+  <button class="fix" onclick="autoFix()">✨ Fix</button>
+  <button class="fmt" onclick="beautify()">{} Format</button>
+  <button class="run" onclick="runCode()">▶ Run</button>
+</div>
+<div class="filebar"><span>📄 index.html • BIGMANJ EDITOR</span><span id="lineCount">0 lines</span></div>
+<div class="wrap" id="editorWrap"><div class="nums" id="nums">1</div><textarea id="code" oninput="onEdit()"></textarea></div>
+<iframe id="preview" sandbox="allow-scripts allow-same-origin"></iframe>
+<div class="errors" id="errBox"><h4><span>⚠️ PROBLEMS (<span id="errCount">0</span>)</span><span style="color:#6A7BFF" onclick="autoFix()">AUTO FIX →</span></h4><div id="errList"></div></div>
+<div class="footer"><span id="info">Ln 1 • BIGMANK</span><span id="status">Ready • Tap Run</span></div>
+<div class="toast" id="toast"></div>
+<script>
+const code=document.getElementById('code'),nums=document.getElementById('nums'),preview=document.getElementById('preview'),errBox=document.getElementById('errBox'),errList=document.getElementById('errList'),editorWrap=document.getElementById('editorWrap');
+code.value=`<!DOCTYPE html>\n<html>\n<head>\n<style>\n  body{font-family:Inter;text-align:center;padding:30px}\n  h1{color:#FFD700;text-shadow:0 2px 10px #000}\n  button{background:#FFD700;color:#000;padding:12px 28px;border:none;border-radius:12px;font-weight:800}\n</style>\n</head>\n<body>\n  <h1>BIGMANJ EDITOR 🔥</h1>\n  <p>Powered by BIGMANK - Real HTML Live</p>\n  <button>BIGMANJ!</button>\n</body>\n</html>`;
+function onEdit(){let l=code.value.split('\n');document.getElementById('lineCount').innerText=l.length+' lines';nums.innerHTML=l.map((_,i)=>i+1).join('<br>');let p=code.selectionStart;let b=code.value.substring(0,p);document.getElementById('info').innerText=`Ln ${b.split('\n').length} • BIGMANK`;checkErrors()}
+function checkErrors(){let html=code.value,errs=[],stack=[],voids=['br','hr','img','input','meta','link'];let re=/<\/?([a-z0-9]+)[^>]*>/gi,m;while(m=re.exec(html)){let full=m[0],name=m[1].toLowerCase();if(voids.includes(name)||full.endsWith('/>')||full.startsWith('<!'))continue;if(full[1]==='/'){if(!stack.length)errs.push({msg:`Extra </${name}>`});else if(stack[stack.length-1]!==name)errs.push({msg:`Expected </${stack[stack.length-1]}> got </${name}>`});else stack.pop()}else stack.push(name)}stack.reverse().forEach(t=>errs.push({msg:`Unclosed <${t}>`}));if(errs.length){errBox.style.display='block';document.getElementById('errCount').innerText=errs.length;errList.innerHTML=errs.map(e=>`<div class="err">• ${e.msg}</div>`).join('');document.getElementById('status').innerText=`⚠️ ${errs.length} errors`;document.getElementById('status').style.color='#FF5A6A'}else{errBox.style.display='none';document.getElementById('status').innerText='✓ BIGMANJ Ready';document.getElementById('status').style.color='#FFD700'}return errs}
+function autoFix(){let html=code.value.replace(/viewpont/g,'viewport').replace(/backgroud/g,'background');let stack=[],voids=['br','hr','img','input','meta','link','!doctype'],re=/<\/?([a-z0-9]+)[^>]*>/gi,tokens=[],m;while(m=re.exec(html))tokens.push({full:m[0],name:m[1].toLowerCase(),index:m.index});let res='',last=0;tokens.forEach(t=>{res+=html.slice(last,t.index)+t.full;last=t.index+t.full.length;if(voids.includes(t.name)||t.full.endsWith('/>')||t.full.startsWith('<!'))return;if(t.full[1]!=='/')stack.push(t.name);else if(stack.includes(t.name))while(stack.length){if(stack.pop()===t.name)break}});res+=html.slice(last);while(stack.length)res+=`</${stack.pop()}>`;code.value=res;onEdit();showToast('✨ BIGMANJ Fixed!')}
+function beautify(){let h=code.value.replace(/></g,'>\n<');let ind=0;code.value=h.split('\n').map(l=>{l=l.trim();if(l.startsWith('</'))ind=Math.max(0,ind-1);let o='  '.repeat(ind)+l;if(l.startsWith('<')&&!l.startsWith('</')&&!l.startsWith('<!')&&!l.endsWith('/>')&&!l.includes('</')&&!['<br','<hr','<img','<input','<meta','<link'].some(v=>l.toLowerCase().startsWith(v)))ind++;return o}).join('\n');onEdit();showToast('Formatted')}
+function showToast(t){let e=document.getElementById('toast');e.innerText=t;e.style.display='block';setTimeout(()=>e.style.display='none',1500)}
+function clearCode(){code.value='';onEdit();preview.style.display='none';editorWrap.style.display='flex'}
+async function pasteCode(){try{code.value=await navigator.clipboard.readText();onEdit();showToast('Pasted')}catch{showToast('Long-press Paste')}}
+function copyCode(){navigator.clipboard.writeText(code.value);showToast('Copied')}
+function runCode(){if(checkErrors().length){showToast('Tap ✨ Fix first');return}preview.srcdoc=code.value;preview.style.display='block';editorWrap.style.display='none';showToast('BIGMANJ Running...')}
+document.getElementById('info').onclick=()=>{preview.style.display='none';editorWrap.style.display='flex'}
+onEdit();
+let deferredPrompt;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;document.getElementById('installBtn').style.display='block'});document.getElementById('installBtn').onclick=async()=>{if(deferredPrompt){deferredPrompt.prompt();deferredPrompt=null;document.getElementById('installBtn').style.display='none'}};
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js')}
+</script>
+</body>
+</html>  
