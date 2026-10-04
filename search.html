@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Search - BIGMANJ PLAYER</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Inter,system-ui}
+body{background:#0A0A0F;color:#fff;min-height:100vh;padding-bottom:90px}
+.top{padding:16px 20px;display:flex;align-items:center;gap:12px;background:#11111A;position:sticky;top:0;z-index:10}
+.top a{color:#A88BFF;text-decoration:none;font-size:22px}
+.top h2{flex:1;text-align:center;font-size:18px}
+.search-box{margin:16px 20px;background:#1A1A27;border:1px solid #7C5CFF;border-radius:16px;padding:14px 18px;display:flex;align-items:center;gap:12px}
+.search-box input{flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:16px}
+.filters{display:flex;gap:10px;padding:0 20px;overflow-x:auto}
+.filters span{padding:8px 16px;background:#1E1E2E;border-radius:20px;font-size:13px;white-space:nowrap;border:1px solid #2A2A3D}
+.filters span.active{background:#7C5CFF;color:#fff}
+.result-head{padding:18px 20px 8px;color:#A88BFF;font-size:13px;text-transform:uppercase;letter-spacing:1px}
+.list{padding:0 20px}
+.song-row{display:flex;align-items:center;gap:14px;padding:14px;background:#15151F;border:1px solid #2A2A3D;border-radius:16px;margin-bottom:12px;cursor:pointer}
+.song-row:active{transform:scale(.98)}
+.song-row img{width:64px;height:64px;border-radius:12px;object-fit:cover;background:#222}
+.info{flex:1;min-width:0}
+.info b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.info span{font-size:12px;color:#8A8A9E;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.info small{font-size:11px;color:#6B6B7E}
+.more{color:#6B6B7E;font-size:20px}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#11111A;border-top:1px solid #2A2A3D;display:flex;justify-content:space-around;padding:12px 0}
+.nav-item{color:#6B6B7E;font-size:12px;text-align:center;text-decoration:none}
+.nav-item.active{color:#7C5CFF}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a href="index.html">‹</a>
+  <h2>Resultados</h2>
+  <span>•••</span>
+</div>
+
+<div class="search-box">
+  🔍 <input id="q" placeholder="Montagem Rabeta" onkeydown="if(event.key==='Enter') doSearch()"><span onclick="doSearch()">🎤</span>
+</div>
+
+<div class="filters">
+  <span class="active">All</span><span>Songs</span><span>Phonk</span><span>Funk</span><span>Slowed</span>
+</div>
+
+<div class="result-head">Resultados da busca</div>
+<div class="list" id="results"></div>
+
+<div class="bottom-nav">
+  <a class="nav-item" href="index.html">🏠<br>Home</a>
+  <a class="nav-item active" href="search.html">🔍<br>Search</a>
+  <a class="nav-item" href="library.html">📚<br>Library</a>
+  <a class="nav-item" href="profile.html">👤<br>Profile</a>
+</div>
+
+<script>
+const API_YTS = "https://api.azbry.com/api/search/yts?query=";
+const API_FALLBACK = "https://zellrayy.vercel.app/api/search/youtube?query=";
+const $results = document.getElementById('results');
+const $q = document.getElementById('q');
+
+// Load from index search if coming from there
+$q.value = new URLSearchParams(location.search).get('q') || localStorage.getItem('last_q') || "Montagem Rabeta";
+
+async function doSearch(){
+ const query = $q.value.trim();
+ if(!query) return;
+ localStorage.setItem('last_q', query);
+ $results.innerHTML = `<div style="padding:30px;text-align:center;color:#888">Searching "${query}"...</div>`;
+ try{
+   let res = await fetch(API_YTS + encodeURIComponent(query));
+   let data = await res.json();
+   let list = data.results || data.result || data || [];
+   if(list.length===0) throw "empty";
+   render(list, query);
+ }catch(e){
+   try{
+     let res2 = await fetch(API_FALLBACK + encodeURIComponent(query));
+     let data2 = await res2.json();
+     let list2 = data2.results || data2 || [];
+     render(list2, query);
+   }catch{
+     $results.innerHTML = `<div style="padding:30px;text-align:center;color:#888">No results. Try another keyword</div>`;
+   }
+ }
+}
+
+function render(list, query){
+ $results.innerHTML = list.map((item,i)=>{
+   const thumb = item.thumbnail || item.thumb || item.image || `https://i.ytimg.com/vi/${item.videoId||item.id}/hqdefault.jpg`;
+   const title = item.title || item.name || "Unknown";
+   const artist = item.channel || item.artist || item.author || "YouTube";
+   const duration = item.duration || item.time || "";
+   const views = item.views || item.playCount || "";
+   return `
+   <div class="song-row" onclick="goPlayer(${i})">
+     <img src="${thumb}" onerror="this.src='https://picsum.photos/200?'+${i}">
+     <div class="info">
+       <b>${title}</b>
+       <span>${artist} • ${duration}</span>
+       <small>${views} ${views?'•':''} ${query}</small>
+     </div>
+     <div class="more">•••</div>
+   </div>`;
+ }).join('');
+ // save list for player thumbnail match
+ localStorage.setItem('search_results', JSON.stringify(list));
+}
+
+function goPlayer(index){
+ const list = JSON.parse(localStorage.getItem('search_results')||"[]");
+ const item = list[index];
+ if(!item) return;
+ const thumb = item.thumbnail || item.thumb || item.image || `https://i.ytimg.com/vi/${item.videoId||item.id}/hqdefault.jpg`;
+ // CRITICAL: player card = search thumbnail (1:1 match)
+ localStorage.setItem('current_thumb', thumb);
+ localStorage.setItem('current_title', item.title);
+ localStorage.setItem('current_id', item.videoId || item.id || "");
+ localStorage.setItem('current_item', JSON.stringify(item));
+ location.href = 'player.html';
+}
+
+doSearch();
+</script>
+</body>
+</html>
