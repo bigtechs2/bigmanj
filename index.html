@@ -19,16 +19,16 @@ body{background:#0A0A0F;color:#fff;min-height:100vh;padding-bottom:90px}
 .card{margin:18px 20px;background:#15151F;border-radius:20px;padding:16px;border:1px solid #2A2A3D}
 .card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .card-head h3{font-size:16px;color:#C9B6FF}
-.song-row{display:flex;align-items:center;gap:12px;padding:12px;background:#1E1E2E;border-radius:14px;margin-bottom:10px}
-.song-row img{width:52px;height:52px;border-radius:10px;object-fit:cover}
-.song-info{flex:1}
-.song-info b{display:block;font-size:14px}
+.song-row{display:flex;align-items:center;gap:12px;padding:12px;background:#1E1E2E;border-radius:14px;margin-bottom:10px;cursor:pointer}
+.song-row img{width:52px;height:52px;border-radius:10px;object-fit:cover;background:#222}
+.song-info{flex:1;min-width:0}
+.song-info b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .song-info span{font-size:12px;color:#8A8A9E}
-.play-btn{width:36px;height:36px;background:#7C5CFF;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.play-btn{width:36px;height:36px;background:#7C5CFF;border-radius:50%;display:flex;align-items:center;justify-content:center}
 .whatmusic{background:linear-gradient(135deg,#2A1A5A,#7C5CFF);border:none}
 .whatmusic button{margin-top:12px;width:100%;background:#fff;color:#6A3FFF;font-weight:800;border:none;padding:12px;border-radius:12px}
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#11111A;border-top:1px solid #2A2A3D;display:flex;justify-content:space-around;padding:12px 0}
-.nav-item{color:#6B6B7E;font-size:12px;text-align:center;cursor:pointer;text-decoration:none}
+.nav-item{color:#6B6B7E;font-size:12px;text-align:center;text-decoration:none}
 .nav-item.active{color:#7C5CFF}
 .nav-item i{font-size:22px;display:block;margin-bottom:2px}
 </style>
@@ -45,8 +45,8 @@ body{background:#0A0A0F;color:#fff;min-height:100vh;padding-bottom:90px}
 </div>
 
 <div class="card">
-  <div class="card-head"><h3>🔥 Trending Now</h3><span style="color:#7C5CFF;font-size:13px">See all</span></div>
-  <div id="trending"></div>
+  <div class="card-head"><h3>🔥 Trending Now</h3><span id="trendStatus" style="color:#7C5CFF;font-size:13px">Live</span></div>
+  <div id="trending"><p style="text-align:center;color:#666;padding:20px">Loading real trending...</p></div>
 </div>
 
 <div class="card whatmusic">
@@ -56,7 +56,7 @@ body{background:#0A0A0F;color:#fff;min-height:100vh;padding-bottom:90px}
 </div>
 
 <div class="card">
-  <div class="card-head"><h3>🕓 Recently Played</h3></div>
+  <div class="card-head"><h3>🕓 Recently Played</h3><span onclick="clearHistory()" style="color:#666;font-size:12px;cursor:pointer">Clear</span></div>
   <div id="recent"></div>
 </div>
 
@@ -68,25 +68,71 @@ body{background:#0A0A0F;color:#fff;min-height:100vh;padding-bottom:90px}
 </div>
 
 <script>
-// Mock trending - will be replaced by API later
-const trends=[
- {title:"Montagem Rabeta",artist:"VXCA • Funk",plays:"4.4M",img:"https://i.ytimg.com/vi/S61N6AtCapI/hq720.jpg"},
- {title:"Montagem Rabeta (Ultra Slowed)",artist:"MC RBL • Phonk",plays:"8.4M",img:"https://i.ytimg.com/vi/XotHVZtVa_0/hq720.jpg"},
- {title:"Night Pulse",artist:"KAI • 2:45",plays:"3.2M",img:"https://picsum.photos/200?1"}
-];
-function render(id,list){
- document.getElementById(id).innerHTML=list.map(s=>`
-  <div class="song-row" onclick="playSong('${s.title}','${s.img}')">
-    <img src="${s.img}"><div class="song-info"><b>${s.title}</b><span>${s.artist} • ${s.plays} plays</span></div><div class="play-btn">▶</div>
+const API_YTS = "https://api.azbry.com/api/search/yts?query=";
+
+// REAL TRENDING FROM API
+async function loadTrending(){
+ try{
+  const res = await fetch(API_YTS + encodeURIComponent("funk brazil phonk 2024"));
+  const data = await res.json();
+  const list = (data.results || data.result || []).slice(0,8);
+  render('trending', list);
+ }catch(e){
+  document.getElementById('trending').innerHTML = `<p style="text-align:center;color:#666;padding:20px">No internet - check connection</p>`;
+ }
+}
+
+function render(id, list){
+ if(!list || list.length===0){
+  document.getElementById(id).innerHTML = `<p style="text-align:center;color:#666;padding:10px">No songs yet</p>`;
+  return;
+ }
+ document.getElementById(id).innerHTML = list.map(s=>{
+   const thumb = s.thumbnail || s.thumb || `https://i.ytimg.com/vi/${s.videoId}/hqdefault.jpg`;
+   const title = (s.title||"").replace(/'/g,"&#39;");
+   return `
+   <div class="song-row" onclick="playSong('${title}','${thumb}','${s.videoId}','${(s.channel||'').replace(/'/g,'')}')">
+     <img src="${thumb}" onerror="this.src='https://via.placeholder.com/52'">
+     <div class="song-info"><b>${s.title}</b><span>${s.channel||s.artist||''} • ${s.views||''}</span></div>
+     <div class="play-btn">▶</div>
+   </div>`;
+ }).join('');
+}
+
+// REAL RECENTLY PLAYED - per user from localStorage
+function loadRecent(){
+ const history = JSON.parse(localStorage.getItem('recent_history')||'[]');
+ if(history.length===0){
+  document.getElementById('recent').innerHTML = `<p style="text-align:center;color:#666;padding:20px">No history yet - Play a song and it will show here for YOU only</p>`;
+  return;
+ }
+ document.getElementById('recent').innerHTML = history.slice(0,5).map(s=>`
+  <div class="song-row" onclick="playSong('${(s.title||'').replace(/'/g,'&#39;')}','${s.thumb}','${s.videoId}','${s.artist||''}')">
+    <img src="${s.thumb}"><div class="song-info"><b>${s.title}</b><span>${s.artist||''}</span></div><div class="play-btn">▶</div>
   </div>`).join('');
 }
-function playSong(title,thumb){
- localStorage.setItem('current_title',title);
- localStorage.setItem('current_thumb',thumb);
+
+function playSong(title, thumb, videoId, artist){
+ // save current
+ localStorage.setItem('current_title', title);
+ localStorage.setItem('current_thumb', thumb);
+ localStorage.setItem('current_id', videoId||'');
+ // save to REAL per-user history
+ let hist = JSON.parse(localStorage.getItem('recent_history')||'[]');
+ hist = hist.filter(x=>x.videoId!==videoId); // remove dup
+ hist.unshift({title, thumb, videoId, artist, time: Date.now()});
+ hist = hist.slice(0,20); // keep 20
+ localStorage.setItem('recent_history', JSON.stringify(hist));
  location.href='player.html';
 }
-render('trending',trends);
-render('recent',trends.slice(0,2));
+
+function clearHistory(){
+ localStorage.removeItem('recent_history');
+ loadRecent();
+}
+
+loadTrending();
+loadRecent();
 </script>
 </body>
 </html>
